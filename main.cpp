@@ -61,11 +61,11 @@ void TestAllOfUsingMultipleThreads(
     std::vector<std::jthread> threads;
     std::latch work_done(sequence_chunks.size());
 
-    for (int i = 0; i < sequence_chunks.size(); i++) {
-        threads.emplace_back([sequence_chunks, i, &work_done]() {
-            auto _ = std::ranges::all_of(
-                sequence_chunks[i],
-                [](const int number) { return MyPredicate(number); });
+    for (const auto &sequence_chunk : sequence_chunks) {
+        threads.emplace_back([sequence_chunks, &sequence_chunk, &work_done]() {
+            auto _ = std::ranges::all_of(sequence_chunk, [](const int number) {
+                return MyPredicate(number);
+            });
             work_done.count_down();
         });
     }
@@ -76,12 +76,12 @@ void TestAllOfUsingMultipleThreads(
 void part1(const std::vector<std::vector<int>> &sequences) {
     std::cout << "<start> No policy\n";
 
-    for (int i = 0; i < sequences.size(); i++) {
-        std::cout << std::format("sequence size = {} ; ", sequences[i].size())
+    for (const auto & sequence : sequences) {
+        std::cout << std::format("sequence size = {} ; ", sequence.size())
                   << "time = "
-                  << MeasureFunctionExecutionTime([sequences, i]() {
+                  << MeasureFunctionExecutionTime([sequences, &sequence]() {
                          auto _ =
-                             std::ranges::all_of(sequences[i], MyPredicate);
+                             std::ranges::all_of(sequence, MyPredicate);
                      })
                   << std::endl;
     }
@@ -90,52 +90,52 @@ void part1(const std::vector<std::vector<int>> &sequences) {
 
 void part2(const std::vector<std::vector<int>> &sequences) {
     std::cout << "<start> Sequenced policy\n";
-    for (int i = 0; i < sequences.size(); i++) {
-        std::cout << std::format("sequence size = {} ; ", sequences[i].size())
+    for (const auto & sequence : sequences) {
+        std::cout << std::format("sequence size = {} ; ", sequence.size())
                   << "time = "
-                  << MeasureFunctionExecutionTime([sequences, i]() {
+                  << MeasureFunctionExecutionTime([sequences, &sequence]() {
                          auto _ = std::all_of(std::execution::seq,
-                                              sequences[i].begin(),
-                                              sequences[i].end(), MyPredicate);
+                                              sequence.begin(),
+                                              sequence.end(), MyPredicate);
                      })
                   << std::endl;
     }
     std::cout << "<end>\n\n" << std::endl;
 
     std::cout << "<start> Parallel policy\n";
-    for (int i = 0; i < sequences.size(); i++) {
-        std::cout << std::format("sequence size = {} ; ", sequences[i].size())
+    for (const auto & sequence : sequences) {
+        std::cout << std::format("sequence size = {} ; ", sequence.size())
                   << "time = "
-                  << MeasureFunctionExecutionTime([sequences, i]() {
+                  << MeasureFunctionExecutionTime([sequences, &sequence]() {
                          auto _ = std::all_of(std::execution::par,
-                                              sequences[i].begin(),
-                                              sequences[i].end(), MyPredicate);
+                                              sequence.begin(),
+                                              sequence.end(), MyPredicate);
                      })
                   << std::endl;
     }
     std::cout << "<end>\n\n" << std::endl;
 
     std::cout << "<start> Parallel unsequenced policy\n";
-    for (int i = 0; i < sequences.size(); i++) {
-        std::cout << std::format("sequence size = {} ; ", sequences[i].size())
+    for (const auto & sequence : sequences) {
+        std::cout << std::format("sequence size = {} ; ", sequence.size())
                   << "time = "
-                  << MeasureFunctionExecutionTime([sequences, i]() {
+                  << MeasureFunctionExecutionTime([sequences, &sequence]() {
                          auto _ = std::all_of(std::execution::par_unseq,
-                                              sequences[i].begin(),
-                                              sequences[i].end(), MyPredicate);
+                                              sequence.begin(),
+                                              sequence.end(), MyPredicate);
                      })
                   << std::endl;
     }
     std::cout << "<end>\n\n" << std::endl;
 
     std::cout << "<start> Unsequenced policy\n";
-    for (int i = 0; i < sequences.size(); i++) {
-        std::cout << std::format("sequence size = {} ; ", sequences[i].size())
+    for (const auto & sequence : sequences) {
+        std::cout << std::format("sequence size = {} ; ", sequence.size())
                   << "time = "
-                  << MeasureFunctionExecutionTime([sequences, i]() {
+                  << MeasureFunctionExecutionTime([sequences, &sequence]() {
                          auto _ = std::all_of(std::execution::unseq,
-                                              sequences[i].begin(),
-                                              sequences[i].end(), MyPredicate);
+                                              sequence.begin(),
+                                              sequence.end(), MyPredicate);
                      })
                   << std::endl;
     }
@@ -150,15 +150,15 @@ struct SplitSequence {
 void part3(const std::vector<std::vector<int>> &sequences) {
     std::map<int, std::vector<SplitSequence>> split_sequences_map;
 
-    for (int i = 0; i < sequences.size(); i++) {
+    for (const auto & sequence : sequences) {
         for (int k = 2; k < 12; k += 2) {
             if (!split_sequences_map.contains(k)) {
                 split_sequences_map[k] = std::vector<SplitSequence>();
             }
 
             SplitSequence split_sequence;
-            split_sequence.chunks = SplitVectorIntoKVectors(sequences[i], k);
-            split_sequence.size = sequences[i].size();
+            split_sequence.chunks = SplitVectorIntoKVectors(sequence, k);
+            split_sequence.size = sequence.size();
 
             split_sequences_map[k].push_back(split_sequence);
         }
@@ -167,11 +167,11 @@ void part3(const std::vector<std::vector<int>> &sequences) {
     for (auto const &[key, value] : split_sequences_map) {
         std::cout << std::format("<start> Multithreaded k = {} \n", key);
 
-        for (int i = 0; i < value.size(); i++) {
-            std::cout << std::format("sequence size = {} ; ", value[i].size)
+        for (const auto & i : value) {
+            std::cout << std::format("sequence size = {} ; ", i.size)
                       << "time = "
                       << MeasureFunctionExecutionTime(
-                             TestAllOfUsingMultipleThreads, value[i].chunks)
+                             TestAllOfUsingMultipleThreads, i.chunks)
                       << std::endl;
         }
 
